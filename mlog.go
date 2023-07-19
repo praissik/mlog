@@ -1,56 +1,35 @@
 package mlog
 
 import (
-	"github.com/praissik/mlog/pkg/db"
-	"github.com/spf13/viper"
-	"log"
 	"runtime/debug"
 	"time"
+
+	"github.com/praissik/mlog/pkg/queue"
+	"github.com/spf13/viper"
 )
 
-type data struct {
-	//ID             primitive.ObjectID `bson:"_id" json:"id,omitempty"`
-	CorrelationID string    `bson:"correlation_id,omitempty"`
-	StackTrace    string    `bson:"stack_trace,omitempty"`
-	Action        string    `bson:"action,omitempty"`
-	Message       string    `bson:"message,omitempty"`
-	Service       string    `bson:"service"`
-	Datetime      time.Time `bson:"datetime"`
-}
-
-func Info(correlationID, action string) {
-	d := data{
-		CorrelationID: correlationID,
-		Action:        action,
-	}
-	d.create()
-}
-
 func Error(correlationID string, err error) {
-	d := data{
+	l := queue.LogError{
 		CorrelationID: correlationID,
 		StackTrace:    string(debug.Stack()),
+		Level:		   "error",
 		Message:       err.Error(),
+		Service:	   viper.GetString("server.name"),
+		Datetime:	   time.Now(),
 	}
-	d.create()
+	payload := l.PrepareLog()
+
+	queue.Publish(payload)
 }
 
-func (d *data) create() {
-	d.Datetime = time.Now().UTC()
-	d.Service = viper.GetString("server.name")
+func Info(correlationID string) {
+	l := queue.LogInfo{
+		CorrelationID: correlationID,
+		Level:         "info",
+		Service:       viper.GetString("server.name"),
+		Datetime:      time.Now(),
+	}
+	payload := l.PrepareLog()
 
-	mongoClient, deferF, err := db.GetMongoClient()
-	defer deferF()
-	if err != nil {
-		return
-	}
-	_, err = mongoClient.
-		Database(viper.GetString("mongo.db")).
-		Collection(db.CollectionLogs).
-		InsertOne(nil, d)
-	if err != nil {
-		log.Println(err.Error())
-		return
-	}
-	return
+	queue.Publish(payload)
 }
