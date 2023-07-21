@@ -22,12 +22,15 @@ func Error(correlationID string, err error) {
 	queue.Publish(payload)
 }
 
-func Info(correlationID string) {
+func Info(correlationID, message string, begin int64) {
+	t := time.Now()
 	l := queue.LogInfo{
 		CorrelationID: correlationID,
 		Level:         "info",
+		Message:       message,
 		Service:       viper.GetString("server.name"),
-		Datetime:      time.Now(),
+		Datetime:      t,
+		Duration:      t.UnixMicro() - begin,
 	}
 	payload := l.PrepareLog()
 

@@ -3,6 +3,7 @@ package queue
 import (
 	"bytes"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ type LogInfo struct {
 	Message       string    `bson:"message,omitempty"`
 	Service       string    `bson:"service"`
 	Datetime      time.Time `bson:"datetime"`
+	Duration      int64    `bson:"duration"`
 }
 
 type LogError struct {
@@ -90,7 +92,10 @@ func (l *LogInfo) PrepareLog() string {
 	buffer.WriteString(`","service":"`)
 	buffer.WriteString(l.Service)
 
-	buffer.WriteString(`","datetime":"`)
+	buffer.WriteString(`","duration":`)
+	buffer.WriteString(strconv.FormatInt(l.Duration, 10))
+
+	buffer.WriteString(`,"datetime":"`)
 	buffer.WriteString(l.Datetime.Format(time.RFC3339Nano))
 
 	buffer.WriteString(`","stack_trace":""}`)
